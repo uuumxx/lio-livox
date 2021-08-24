@@ -597,7 +597,7 @@ void LidarFeatureExtractor::FeatureExtract_with_segment(const livox_ros_driver::
   laserConerFeature->clear();
   laserSurfFeature->clear();
   laserCloud->clear();
-  laserCloud->reserve(15000*N_SCANS);
+  laserCloud->reserve(15000*N_SCANS);  //用来给vector预分配存储区大小
   for(auto & ptr : vlines){
     ptr->clear();
   }
@@ -610,14 +610,18 @@ void LidarFeatureExtractor::FeatureExtract_with_segment(const livox_ros_driver::
 
   int dnum = msg->points.size();
 
+  // 初始化msg->points.size()
   int *idtrans = (int*)calloc(dnum, sizeof(int));
   float *data=(float*)calloc(dnum*4,sizeof(float));
   int point_num = 0;
 
+  // timestamp
   double timeSpan = ros::Time().fromNSec(msg->points.back().offset_time).toSec();
   PointType point;
+  // 遍历bag中points, 删选：x坐标小于0.01；xyz无效点也去除
   for(const auto& p : msg->points){
 
+    // p.line Horizion雷达横向扫，6条线，每个点带有一个line号
     int line_num = (int)p.line;
     if(line_num > Used_Line-1) continue;
     if(p.x < 0.01) continue;
@@ -643,6 +647,7 @@ void LidarFeatureExtractor::FeatureExtract_with_segment(const livox_ros_driver::
     point_num++;
   }
 
+  // 进行segmentation时，只需要data的xyzi四维数据
   PCSeg pcseg;
   pcseg.DoSeg(idtrans,data,dnum);
 

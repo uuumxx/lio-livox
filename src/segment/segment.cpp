@@ -8,6 +8,7 @@ int tem_gnd_num = 0;
 PCSeg::PCSeg()
 {
     this->posFlag=0;
+    // DN_SAMPLE_IMG_NX (600); DN_SAMPLE_IMG_NY (200); DN_SAMPLE_IMG_NZ (100); 
     this->pVImg=(unsigned char*)calloc(DN_SAMPLE_IMG_NX*DN_SAMPLE_IMG_NY*DN_SAMPLE_IMG_NZ,sizeof(unsigned char));
     this->corPoints=NULL;
 }
