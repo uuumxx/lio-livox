@@ -49,7 +49,7 @@ int FilterGndForPos_cor(float* outPoints,float*inPoints,int inNum)
     float dy=2;
     int x_len = 20;
     int y_len = 10;
-    int nx=2*x_len/dx; //80
+    int nx=2*x_len/dx; //80??? 是20吧(2021年08月25日17:32:22)
     int ny=2*y_len/dy; //10
     float offx=-20,offy=-10;
     float THR=0.4;
@@ -61,6 +61,8 @@ int FilterGndForPos_cor(float* outPoints,float*inPoints,int inNum)
     float *imgMeanZ=(float*)calloc(nx*ny,sizeof(float));
     int *imgNumZ=(int*)calloc(nx*ny,sizeof(int));
     int *idtemp = (int*)calloc(inNum,sizeof(int));
+    
+    // [疑惑]nx=20,ny=10是选取这个范围内的点吗？
     for(int ii=0;ii<nx*ny;ii++)
     {
         imgMinZ[ii]=10;
@@ -70,11 +72,14 @@ int FilterGndForPos_cor(float* outPoints,float*inPoints,int inNum)
         imgNumZ[ii]=0;
     }
 
+    // 地面输入点的范围：x轴->-20~20，y轴->-10~10
     for(int pid=0;pid<inNum;pid++)
     {
         idtemp[pid] = -1;
         if((inPoints[pid*4] > -x_len) && (inPoints[pid*4]<x_len)&&(inPoints[pid*4+1]>-y_len)&&(inPoints[pid*4+1]<y_len))
         {
+            // 消除补偿，都取正值：idx[0-10],idy[0-5]
+            // [疑惑]为什么要除以dx和dy
             int idx=(inPoints[pid*4]-offx)/dx;
             int idy=(inPoints[pid*4+1]-offy)/dy;
             idtemp[pid] = idx+idy*nx;
@@ -284,8 +289,10 @@ int CorrectPoints_cor(float *fPoints,int pointNum,float *gndPos)
 }
 
 
+// 获取ground点
 int GetGndPos(float *pos, float *fPoints,int pointNum){
     float *fPoints3=(float*)calloc(60000*4,sizeof(float));//地面点
+    // 筛选地面点
     int pnum3 = FilterGndForPos_cor(fPoints3,fPoints,pointNum);
     float tmpPos[6];
     if (pnum3 < 3)
