@@ -22,6 +22,7 @@ void lidarCallBackHorizon(const livox_ros_driver::CustomMsgConstPtr &msg) {
   sensor_msgs::PointCloud2 msg2;
 
   if(Use_seg){
+    // 分割地面点，前景，背景，角点，面点
     lidarFeatureExtractor->FeatureExtract_with_segment(msg, laserCloud, laserConerCloud, laserSurfCloud, laserNonFeatureCloud, msg2,N_SCANS);
   }
   else{

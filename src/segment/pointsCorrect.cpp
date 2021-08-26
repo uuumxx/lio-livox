@@ -9,6 +9,7 @@ int GetNeiborPCA_cor(SNeiborPCA_cor &npca, pcl::PointCloud<pcl::PointXYZ>::Ptr c
     std::vector<float> k_dis;
     pcl::PointCloud<pcl::PointXYZ>::Ptr subCloud(new pcl::PointCloud<pcl::PointXYZ>);
 
+    // [out] npca.neibors k_dis; [return] number of neighbors found in radius
     if(kdtree.radiusSearch(searchPoint,fSearchRadius,npca.neibors,k_dis)>5)
     {
         subCloud->width=npca.neibors.size();
@@ -21,12 +22,16 @@ int GetNeiborPCA_cor(SNeiborPCA_cor &npca, pcl::PointCloud<pcl::PointXYZ>::Ptr c
             subCloud->points[pid].y=cloud->points[npca.neibors[pid]].y;
             subCloud->points[pid].z=cloud->points[npca.neibors[pid]].z;
         }
-        //利用PCA主元分析法获得点云的三个主方向，获取质心，计算协方差，获得协方差矩阵，求取协方差矩阵的特征值和特长向量，特征向量即为主方向。 sy
+        //利用PCA主元分析法获得点云的三个主方向，获取质心，计算协方差，获得协方差矩阵，求取协方差矩阵的特征值和特征向量，特征向量即为主方向。 sy
         Eigen::Vector4f pcaCentroid;
+        // 计算质心，输入点云->输出质心
     	pcl::compute3DCentroid(*subCloud, pcaCentroid);
 	    Eigen::Matrix3f covariance;
+        // 通过质心计算协方差
 	    pcl::computeCovarianceMatrixNormalized(*subCloud, pcaCentroid, covariance);
+        // 获取协方差矩阵
 	    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigen_solver(covariance, Eigen::ComputeEigenvectors);
+        // 特征值和特征向量
 	    npca.eigenVectorsPCA = eigen_solver.eigenvectors();
 	    npca.eigenValuesPCA = eigen_solver.eigenvalues();
         float vsum=npca.eigenValuesPCA(0)+npca.eigenValuesPCA(1)+npca.eigenValuesPCA(2);
@@ -139,6 +144,7 @@ int CalGndPos_cor(float *gnd, float *fPoints,int pointNum,float fSearchRadius)
     {
         return 0;
     }
+    // 以XYZ格式记录地面点的信息，width、height为（pcd）header信息
     cloud->width=pointNum;
     cloud->height=1;
     cloud->points.resize(cloud->width*cloud->height);
@@ -157,6 +163,7 @@ int CalGndPos_cor(float *gnd, float *fPoints,int pointNum,float fSearchRadius)
     {
         if ((nNum<1000)&&(pLabel[pid]==0))
         {
+            // 此处定义npca未初始化
             SNeiborPCA_cor npca;
             pcl::PointXYZ searchPoint;
             searchPoint.x=cloud->points[pid].x;

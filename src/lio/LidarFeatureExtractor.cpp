@@ -658,11 +658,14 @@ void LidarFeatureExtractor::FeatureExtract_with_segment(const livox_ros_driver::
     vlines[line_idx]->push_back(laserCloud->points[i]);
   }
 
+  // create thread for each line 
   std::thread threads[N_SCANS];
   for(int i=0; i<N_SCANS; ++i){
+    // thread(func, n1, n2, n3)
     threads[i] = std::thread(&LidarFeatureExtractor::detectFeaturePoint3, this, std::ref(vlines[i]),std::ref(vcorner[i]));
   }
 
+  // 使用join保证每个thread正常执行
   for(int i=0; i<N_SCANS; ++i){
     threads[i].join();
   }
@@ -691,11 +694,14 @@ void LidarFeatureExtractor::FeatureExtract_with_segment(const livox_ros_driver::
   laserConerFeature.reset(new pcl::PointCloud<PointType>());
   laserSurfFeature.reset(new pcl::PointCloud<PointType>());
   laserNonFeature.reset(new pcl::PointCloud<PointType>());
+
+  // 角点
   for(const auto& p : laserCloud->points){
     if(std::fabs(p.normal_z - 1.0) < 1e-5)
       laserConerFeature->push_back(p);
   }
 
+  // 面点
   for(const auto& p : laserCloud->points){
     if(std::fabs(p.normal_z - 2.0) < 1e-5)
       laserSurfFeature->push_back(p);
@@ -850,6 +856,8 @@ void LidarFeatureExtractor::detectFeaturePoint2(pcl::PointCloud<PointType>::Ptr&
 }
 
 
+// cloud是一条线上的点， pointsLessSharp是corner feature index of each line
+// CloudFeatureFlag: [100]面点；[200]角点
 void LidarFeatureExtractor::detectFeaturePoint3(pcl::PointCloud<PointType>::Ptr& cloud,
                                                 std::vector<int>& pointsLessSharp){
   int CloudFeatureFlag[20000];
@@ -866,6 +874,7 @@ void LidarFeatureExtractor::detectFeaturePoint3(pcl::PointCloud<PointType>::Ptr&
 
   PointType point;
   pcl::PointCloud<PointType>::Ptr _laserCloud(new pcl::PointCloud<PointType>());
+  // reallocate capability
   _laserCloud->reserve(cloudSize);
 
   for (int i = 0; i < cloudSize; i++) {
@@ -1106,58 +1115,65 @@ void LidarFeatureExtractor::FeatureExtract(const livox_ros_driver::CustomMsgCons
   laserSurfFeature->clear();
   laserCloud->reserve(15000*N_SCANS);
   for(auto & ptr : vlines){
-  ptr->clear();
+    ptr->clear();
   }
   for(auto & v : vcorner){
-  v.clear();
+    v.clear();
   }
   for(auto & v : vsurf){
-  v.clear();
+    v.clear();
   }
   double timeSpan = ros::Time().fromNSec(msg->points.back().offset_time).toSec();
   PointType point;
   for(const auto& p : msg->points){
-  int line_num = (int)p.line;
-  if(line_num > Used_Line-1) continue;
-  if(p.x < 0.01) continue;
-  point.x = p.x;
-  point.y = p.y;
-  point.z = p.z;
-  point.intensity = p.reflectivity;
-  point.normal_x = ros::Time().fromNSec(p.offset_time).toSec() /timeSpan;
-  point.normal_y = _int_as_float(line_num);
-  laserCloud->push_back(point);
+    int line_num = (int)p.line;
+    if(line_num > Used_Line-1) continue;
+    if(p.x < 0.01) continue;
+    point.x = p.x;
+    point.y = p.y;
+    point.z = p.z;
+    point.intensity = p.reflectivity;
+    point.normal_x = ros::Time().fromNSec(p.offset_time).toSec() /timeSpan;
+    point.normal_y = _int_as_float(line_num);
+    laserCloud->push_back(point);
   }
   std::size_t cloud_num = laserCloud->size();
+
   for(std::size_t i=0; i<cloud_num; ++i){
-  int line_idx = _float_as_int(laserCloud->points[i].normal_y);
-  laserCloud->points[i].normal_z = _int_as_float(i);
-  vlines[line_idx]->push_back(laserCloud->points[i]);
-  laserCloud->points[i].normal_z = 0;
+    int line_idx = _float_as_int(laserCloud->points[i].normal_y);
+    laserCloud->points[i].normal_z = _int_as_float(i);
+    vlines[line_idx]->push_back(laserCloud->points[i]);
+    laserCloud->points[i].normal_z = 0;
   }
+  
   std::thread threads[N_SCANS];
+
   for(int i=0; i<N_SCANS; ++i){
-  threads[i] = std::thread(&LidarFeatureExtractor::detectFeaturePoint, this, std::ref(vlines[i]),
-                     std::ref(vcorner[i]), std::ref(vsurf[i]));
+    threads[i] = std::thread(&LidarFeatureExtractor::detectFeaturePoint, this, std::ref(vlines[i]),
+                    std::ref(vcorner[i]), std::ref(vsurf[i]));
   }
+
   for(int i=0; i<N_SCANS; ++i){
-  threads[i].join();
+    threads[i].join();
   }
+
   for(int i=0; i<N_SCANS; ++i){
-  for(int j=0; j<vcorner[i].size(); ++j){
-  laserCloud->points[_float_as_int(vlines[i]->points[vcorner[i][j]].normal_z)].normal_z = 1.0;
-  }
-  for(int j=0; j<vsurf[i].size(); ++j){
-  laserCloud->points[_float_as_int(vlines[i]->points[vsurf[i][j]].normal_z)].normal_z = 2.0;
-  }
+    for(int j=0; j<vcorner[i].size(); ++j){
+      laserCloud->points[_float_as_int(vlines[i]->points[vcorner[i][j]].normal_z)].normal_z = 1.0;
+    }
+
+    for(int j=0; j<vsurf[i].size(); ++j){
+      laserCloud->points[_float_as_int(vlines[i]->points[vsurf[i][j]].normal_z)].normal_z = 2.0;
+    }
   }
 
   for(const auto& p : laserCloud->points){
-  if(std::fabs(p.normal_z - 1.0) < 1e-5)
-  laserConerFeature->push_back(p);
+    if(std::fabs(p.normal_z - 1.0) < 1e-5)
+      laserConerFeature->push_back(p);
   }
+
   for(const auto& p : laserCloud->points){
-  if(std::fabs(p.normal_z - 2.0) < 1e-5)
-  laserSurfFeature->push_back(p);
+    if(std::fabs(p.normal_z - 2.0) < 1e-5)
+      laserSurfFeature->push_back(p);
   }
 }

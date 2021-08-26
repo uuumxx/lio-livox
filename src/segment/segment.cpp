@@ -115,6 +115,7 @@ int PCSeg::DoSeg(int *pLabel1, float* fPoints1, int pointNum)
     }
   
     int *pLabelAg=(int*)calloc(agnum,sizeof(int));
+    // 若地上点数目部位0，分割地上点（前景为0 背景为1 物体分类后 >=10）
     if (agnum != 0)
     {
         AbvGndSeg(pLabelAg,fPoints3,agnum);  
@@ -667,6 +668,7 @@ int AbvGndSeg(int *pLabel, float *fPoints, int pointNum)
 
     SegBG(pLabel,cloud,kdtree,0.5); //背景label=1 前景0
 
+    // cluster筛选object点
     SegObjects(pLabel,cloud,kdtree,0.7);
 
     FreeSeg(fPoints,pLabel,pointNum);
