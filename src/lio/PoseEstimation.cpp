@@ -1,6 +1,8 @@
 #include "Estimator/Estimator.h"
 typedef pcl::PointXYZINormal PointType;
 
+std::string fileName = "~/b00570232/bagdata/high/GT_2021-08-05-12-03-16/c_out.pcd";
+ofstream outfile;
 int WINDOWSIZE;
 bool LidarIMUInited = false;
 boost::shared_ptr<std::list<Estimator::LidarFrame>> lidarFrameList;
@@ -377,6 +379,7 @@ void process(){
     if(!_lidarMsgQueue.empty()){
       // get new lidar msg
       time_curr_lidar = _lidarMsgQueue.front()->header.stamp.toSec();
+      // sensor_msgs::PointCloud2 和 pcl::PointCloud<T>之间的转换
       pcl::fromROSMsg(*_lidarMsgQueue.front(), *laserCloudFullRes);
       _lidarMsgQueue.pop();
       newfullCloud = true;
@@ -407,6 +410,7 @@ void process(){
       lidarFrame.timeStamp = time_curr_lidar;
 
 	    boost::shared_ptr<std::list<Estimator::LidarFrame>> lidar_list;
+      // vimuMsg数据是否被载入一起计算
 	    if(!vimuMsg.empty()){
 	    	if(!LidarIMUInited) {
 	    		// if get IMU msg successfully, use gyro integration to update delta_Rl
@@ -473,12 +477,13 @@ void process(){
 	    	}
 	    }
 
-	    // remove lidar distortion
+	    // remove lidar distortion 消除失真
 	    RemoveLidarDistortion(laserCloudFullRes, delta_Rl, delta_tl);
 
       // optimize current lidar pose with IMU
       estimator->EstimateLidarPose(*lidar_list, exTlb, GravityVector, debugInfo);
 
+      // cornerMap & surfaceMap
       pcl::PointCloud<PointType>::Ptr laserCloudCornerMap(new pcl::PointCloud<PointType>());
       pcl::PointCloud<PointType>::Ptr laserCloudSurfMap(new pcl::PointCloud<PointType>());
 
@@ -503,12 +508,17 @@ void process(){
       int laserCloudFullResNum = lidar_list->front().laserCloud->points.size();
       pcl::PointCloud<PointType>::Ptr laserCloudAfterEstimate(new pcl::PointCloud<PointType>());
       laserCloudAfterEstimate->reserve(laserCloudFullResNum);
+
+      outfile.open(fileName, ios::app);
       for (int i = 0; i < laserCloudFullResNum; i++) {
         PointType temp_point;
         MAP_MANAGER::pointAssociateToMap(&lidar_list->front().laserCloud->points[i], &temp_point, transformTobeMapped);
+        outfile << temp_point.x << " " << temp_point.y << " " << temp_point.z << " " << temp_point.intensity << endl;
         laserCloudAfterEstimate->push_back(temp_point);
       }
+      outfile.close();
       sensor_msgs::PointCloud2 laserCloudMsg;
+      // sensor_msgs::PointCloud2 <=> pcl::PointCloud<T> 
       pcl::toROSMsg(*laserCloudAfterEstimate, laserCloudMsg);
       laserCloudMsg.header.frame_id = "/world";
       laserCloudMsg.header.stamp.fromSec(lidar_list->front().timeStamp);
@@ -612,6 +622,7 @@ int main(int argc, char** argv)
   estimator = new Estimator(filter_parameter_corner, filter_parameter_surf);
 	lidarFrameList.reset(new std::list<Estimator::LidarFrame>);
 
+  // process->
   std::thread thread_process{process};
   ros::spin();
 
