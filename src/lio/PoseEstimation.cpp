@@ -1,8 +1,9 @@
 #include "Estimator/Estimator.h"
+#include <fstream>
 typedef pcl::PointXYZINormal PointType;
 
-std::string fileName = "~/b00570232/bagdata/high/GT_2021-08-05-12-03-16/c_out.pcd";
-ofstream outfile;
+std::string fileName = "/home/workstation/b00570232/bagdata/high/GT_2021-08-05-12-03-16/bc_out.pcd";
+std::ofstream outfile;
 int WINDOWSIZE;
 bool LidarIMUInited = false;
 boost::shared_ptr<std::list<Estimator::LidarFrame>> lidarFrameList;
@@ -379,6 +380,8 @@ void process(){
     if(!_lidarMsgQueue.empty()){
       // get new lidar msg
       time_curr_lidar = _lidarMsgQueue.front()->header.stamp.toSec();
+      // 每帧时间戳
+      std::cout << _lidarMsgQueue.front()->header.stamp << std::endl;
       // sensor_msgs::PointCloud2 和 pcl::PointCloud<T>之间的转换
       pcl::fromROSMsg(*_lidarMsgQueue.front(), *laserCloudFullRes);
       _lidarMsgQueue.pop();
@@ -396,11 +399,13 @@ void process(){
         // get IMU msg int the Specified time interval
         vimuMsg.clear();
         int countFail = 0;
+        // return !vimuMsg.empty();
         while (!fetchImuMsgs(time_last_lidar, time_curr_lidar, vimuMsg)) {
           countFail++;
           if (countFail > 100){
             break;
           }
+          //当前线程休眠10毫秒
           std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
         }
       }
@@ -509,11 +514,13 @@ void process(){
       pcl::PointCloud<PointType>::Ptr laserCloudAfterEstimate(new pcl::PointCloud<PointType>());
       laserCloudAfterEstimate->reserve(laserCloudFullResNum);
 
-      outfile.open(fileName, ios::app);
+      // std::cout << lidar_list->front().timeStamp << std::endl;
+      outfile.open(fileName, std::ios::app);
       for (int i = 0; i < laserCloudFullResNum; i++) {
         PointType temp_point;
         MAP_MANAGER::pointAssociateToMap(&lidar_list->front().laserCloud->points[i], &temp_point, transformTobeMapped);
-        outfile << temp_point.x << " " << temp_point.y << " " << temp_point.z << " " << temp_point.intensity << endl;
+        // outfile << temp_point.x << " " << temp_point.y << " " << temp_point.z << " " << temp_point.intensity << std::endl;
+        // std::cout << temp_point.x << " " << temp_point.y << " " << temp_point.z << " " << temp_point.intensity << std::endl;
         laserCloudAfterEstimate->push_back(temp_point);
       }
       outfile.close();

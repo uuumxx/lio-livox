@@ -71,7 +71,7 @@ int main(int argc, char** argv)
   laserSurfCloud.reset(new pcl::PointCloud<PointType>);
   laserNonFeatureCloud.reset(new pcl::PointCloud<PointType>);
 
-  customCloud = nodeHandler.subscribe<livox_ros_driver::CustomMsg>("/livox/lidar", 100, &lidarCallBackHorizon);
+  customCloud = nodeHandler.subscribe<livox_ros_driver::CustomMsg>("/livox/lidar_3WEDH7600115321", 100, &lidarCallBackHorizon);
 
   pubFullLaserCloud = nodeHandler.advertise<sensor_msgs::PointCloud2>("/livox_full_cloud", 10);
   pubSharpCloud = nodeHandler.advertise<sensor_msgs::PointCloud2>("/livox_less_sharp_cloud", 10);
