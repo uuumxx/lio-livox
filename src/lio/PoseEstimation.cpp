@@ -2,8 +2,13 @@
 #include <fstream>
 typedef pcl::PointXYZINormal PointType;
 
-std::string fileName = "/home/workstation/b00570232/bagdata/high/GT_2021-08-05-12-03-16/bc_out.pcd";
+std::string fileName = "/home/workstation/b00570232/bagdata/high/GT_2021-08-05-12-03-16/pcd_0908.pcd";
+std::string fileName2 = "/home/workstation/b00570232/bagdata/high/GT_2021-08-05-12-03-16/odometryTimebase.pcd";
+std::string fileName3 = "/home/workstation/b00570232/bagdata/high/GT_2021-08-05-12-03-16/singleMapTimeBase/";
+std::string dotPcd = ".pcd";
 std::ofstream outfile;
+std::ofstream outfile2;
+std::ofstream outfile3;
 int WINDOWSIZE;
 bool LidarIMUInited = false;
 boost::shared_ptr<std::list<Estimator::LidarFrame>> lidarFrameList;
@@ -58,6 +63,13 @@ void pubOdometry(const Eigen::Matrix4d& newPose, double& timefullCloud){
   laserOdometry.pose.pose.position.x = newPosition.x();
   laserOdometry.pose.pose.position.y = newPosition.y();
   laserOdometry.pose.pose.position.z = newPosition.z();
+
+  // 输出odometery数据，timebase
+  // std::cout << std::to_string(timefullCloud) << std::endl;
+  outfile2.open(fileName2, std::ios::app);
+  outfile2 << newPosition.x() << " " << newPosition.y() << " " << newPosition.z() << " " << std::to_string(timefullCloud) << std::endl;
+  outfile2.close();
+
   pubLaserOdometry.publish(laserOdometry);
 
   geometry_msgs::PoseStamped laserPose;
@@ -380,8 +392,8 @@ void process(){
     if(!_lidarMsgQueue.empty()){
       // get new lidar msg
       time_curr_lidar = _lidarMsgQueue.front()->header.stamp.toSec();
-      // 每帧时间戳
-      std::cout << _lidarMsgQueue.front()->header.stamp << std::endl;
+      // 每帧时间戳 - utc时间
+      // std::cout << _lidarMsgQueue.front()->header.stamp << std::endl;
       // sensor_msgs::PointCloud2 和 pcl::PointCloud<T>之间的转换
       pcl::fromROSMsg(*_lidarMsgQueue.front(), *laserCloudFullRes);
       _lidarMsgQueue.pop();
@@ -515,15 +527,22 @@ void process(){
       laserCloudAfterEstimate->reserve(laserCloudFullResNum);
 
       // std::cout << lidar_list->front().timeStamp << std::endl;
+
       outfile.open(fileName, std::ios::app);
+
+      std::string mapName = fileName3 + std::to_string(lidar_list->front().timeStamp) + dotPcd;
+      outfile3.open(mapName, std::ios::app);
       for (int i = 0; i < laserCloudFullResNum; i++) {
         PointType temp_point;
         MAP_MANAGER::pointAssociateToMap(&lidar_list->front().laserCloud->points[i], &temp_point, transformTobeMapped);
-        // outfile << temp_point.x << " " << temp_point.y << " " << temp_point.z << " " << temp_point.intensity << std::endl;
+        if (temp_point.intensity >= 15 && temp_point.intensity <= 120)
+          outfile << temp_point.x << " " << temp_point.y << " " << temp_point.z << " " << temp_point.intensity << std::endl;
+        outfile3 << temp_point.x << " " << temp_point.y << " " << temp_point.z << " " << temp_point.intensity << std::endl;
         // std::cout << temp_point.x << " " << temp_point.y << " " << temp_point.z << " " << temp_point.intensity << std::endl;
         laserCloudAfterEstimate->push_back(temp_point);
       }
       outfile.close();
+      outfile3.close();
       sensor_msgs::PointCloud2 laserCloudMsg;
       // sensor_msgs::PointCloud2 <=> pcl::PointCloud<T> 
       pcl::toROSMsg(*laserCloudAfterEstimate, laserCloudMsg);

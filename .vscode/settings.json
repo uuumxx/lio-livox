@@ -63,7 +63,10 @@
         "map": "cpp",
         "memory_resource": "cpp",
         "random": "cpp",
-        "set": "cpp"
+        "set": "cpp",
+        "unordered_set": "cpp",
+        "hash_map": "cpp",
+        "hash_set": "cpp"
     },
     "python.autoComplete.extraPaths": [
         "/home/workstation/catkin_ws/devel/lib/python2.7/dist-packages",
