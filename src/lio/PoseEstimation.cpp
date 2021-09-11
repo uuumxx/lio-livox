@@ -2,9 +2,9 @@
 #include <fstream>
 typedef pcl::PointXYZINormal PointType;
 
-std::string fileName = "/home/workstation/b00570232/bagdata/high/GT_2021-08-05-12-03-16/pcd_0908.pcd";
-std::string fileName2 = "/home/workstation/b00570232/bagdata/high/GT_2021-08-05-12-03-16/odometryTimebase.pcd";
-std::string fileName3 = "/home/workstation/b00570232/bagdata/high/GT_2021-08-05-12-03-16/singleMapTimeBase/";
+std::string fileName = "/home/workstation/b00570232/bagdata/high/GT_2021-08-05-12-03-16/GT_2021-08-05-12-03-16/pcd_0911.pcd";
+std::string fileName2 = "/home/workstation/b00570232/bagdata/high/GT_2021-08-05-12-03-16/GT_2021-08-05-12-03-16/odometryTimebase.pcd";
+std::string fileName3 = "/home/workstation/b00570232/bagdata/high/GT_2021-08-05-12-03-16/GT_2021-08-05-12-03-16/singleMapTimeBase/";
 std::string dotPcd = ".pcd";
 std::ofstream outfile;
 std::ofstream outfile2;
@@ -47,8 +47,10 @@ nav_msgs::Path laserOdoPath;
   * \param[in] newPose: pose to be published
   * \param[in] timefullCloud: time stamp
   */
-void pubOdometry(const Eigen::Matrix4d& newPose, double& timefullCloud){
+PointType pubOdometry(const Eigen::Matrix4d& newPose, double& timefullCloud){
   nav_msgs::Odometry laserOdometry;
+
+  PointType tempOdometryPoint;
 
   Eigen::Matrix3d Rcurr = newPose.topLeftCorner(3, 3);
   Eigen::Quaterniond newQuat(Rcurr);
@@ -63,6 +65,11 @@ void pubOdometry(const Eigen::Matrix4d& newPose, double& timefullCloud){
   laserOdometry.pose.pose.position.x = newPosition.x();
   laserOdometry.pose.pose.position.y = newPosition.y();
   laserOdometry.pose.pose.position.z = newPosition.z();
+
+  // get odometry point
+  tempOdometryPoint.x = newPosition.x();
+  tempOdometryPoint.y = newPosition.y();
+  tempOdometryPoint.z = newPosition.z();
 
   // 输出odometery数据，timebase
   // std::cout << std::to_string(timefullCloud) << std::endl;
@@ -99,6 +106,7 @@ void pubOdometry(const Eigen::Matrix4d& newPose, double& timefullCloud){
 	};
 	pubGps.publish(gps);
 
+  return tempOdometryPoint;
 }
 
 void fullCallBack(const sensor_msgs::PointCloud2ConstPtr &msg){
@@ -131,6 +139,7 @@ bool fetchImuMsgs(double startTime, double endTime, std::vector<sensor_msgs::Imu
       break;
     sensor_msgs::ImuConstPtr& tmpimumsg = _imuMsgQueue.front();
     double time = tmpimumsg->header.stamp.toSec();
+
     if(time<=endTime && time>startTime){
       vimuMsg.push_back(tmpimumsg);
       current_time = time;
@@ -411,7 +420,7 @@ void process(){
         // get IMU msg int the Specified time interval
         vimuMsg.clear();
         int countFail = 0;
-        // return !vimuMsg.empty();
+        // return !vimuMsg.empty(); empty: false; not empty: true
         while (!fetchImuMsgs(time_last_lidar, time_curr_lidar, vimuMsg)) {
           countFail++;
           if (countFail > 100){
@@ -519,7 +528,8 @@ void process(){
 	    transformAftMapped.topRightCorner(3,1) = lidar_list->front().P;
 
 	    // publish odometry rostopic
-	    pubOdometry(transformTobeMapped, lidar_list->front().timeStamp);
+      
+	    PointType tempOdometryPoint = pubOdometry(transformTobeMapped, lidar_list->front().timeStamp);
 
       // publish lidar points
       int laserCloudFullResNum = lidar_list->front().laserCloud->points.size();
@@ -527,18 +537,20 @@ void process(){
       laserCloudAfterEstimate->reserve(laserCloudFullResNum);
 
       // std::cout << lidar_list->front().timeStamp << std::endl;
-
-      outfile.open(fileName, std::ios::app);
+      // std::cout << tempOdometryPoint.x << " " << tempOdometryPoint.y << " " << tempOdometryPoint.z << std::endl;
 
       std::string mapName = fileName3 + std::to_string(lidar_list->front().timeStamp) + dotPcd;
+
+      outfile.open(fileName, std::ios::app);
       outfile3.open(mapName, std::ios::app);
       for (int i = 0; i < laserCloudFullResNum; i++) {
         PointType temp_point;
         MAP_MANAGER::pointAssociateToMap(&lidar_list->front().laserCloud->points[i], &temp_point, transformTobeMapped);
-        if (temp_point.intensity >= 15 && temp_point.intensity <= 120)
+        if ((temp_point.intensity >= 15 && temp_point.intensity <= 120) && (temp_point.y <= (tempOdometryPoint.y + 3) && temp_point.y >= (tempOdometryPoint.y - 3)) && (temp_point.z <= tempOdometryPoint.z)) {
           outfile << temp_point.x << " " << temp_point.y << " " << temp_point.z << " " << temp_point.intensity << std::endl;
-        outfile3 << temp_point.x << " " << temp_point.y << " " << temp_point.z << " " << temp_point.intensity << std::endl;
+          outfile3 << temp_point.x << " " << temp_point.y << " " << temp_point.z << " " << temp_point.intensity << std::endl;
         // std::cout << temp_point.x << " " << temp_point.y << " " << temp_point.z << " " << temp_point.intensity << std::endl;
+        }
         laserCloudAfterEstimate->push_back(temp_point);
       }
       outfile.close();
@@ -631,7 +643,7 @@ int main(int argc, char** argv)
   ros::Subscriber subFullCloud = nodeHandler.subscribe<sensor_msgs::PointCloud2>("/livox_full_cloud", 10, fullCallBack);
   ros::Subscriber sub_imu;
   if(IMU_Mode > 0)
-    sub_imu = nodeHandler.subscribe("/livox/imu", 2000, imu_callback, ros::TransportHints().unreliable());
+    sub_imu = nodeHandler.subscribe("/livox/imu_3WEDH7600115321", 2000, imu_callback, ros::TransportHints().unreliable());
   if(IMU_Mode < 2)
     WINDOWSIZE = 1;
   else
