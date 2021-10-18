@@ -1,14 +1,25 @@
 #include "Estimator/Estimator.h"
 #include <fstream>
+#include <math.h>       /* round, floor, ceil, trunc */
+
+
 typedef pcl::PointXYZINormal PointType;
 
-std::string fileName = "/home/workstation/b00570232/bagdata/high/GT_2021-08-05-12-03-16/GT_2021-08-05-12-03-16/pcd_0911.pcd";
-std::string fileName2 = "/home/workstation/b00570232/bagdata/high/GT_2021-08-05-12-03-16/GT_2021-08-05-12-03-16/odometryTimebase.pcd";
-std::string fileName3 = "/home/workstation/b00570232/bagdata/high/GT_2021-08-05-12-03-16/GT_2021-08-05-12-03-16/singleMapTimeBase/";
+std::string prefexAddr = "/home/workstation/b00570232/bagdata/SLAM/out123/";
+std::string fileName = prefexAddr + "pcd_0918.pcd";
+std::string fileName4 = prefexAddr + "pcd_0918_mapped.pcd";
+std::string fileName2 = prefexAddr + "odometryTimebase.pcd";
+std::string fileName3 = prefexAddr + "SLAM_singleFrame/";
+std::string fileName5= prefexAddr + "SLAM_singleFrame_sorted/";
+std::string rmPath = "rm -rf " + prefexAddr;
+std::string path = "mkdir -p " + fileName3;
+std::string path2 = "mkdir -p " + fileName5;
 std::string dotPcd = ".pcd";
 std::ofstream outfile;
 std::ofstream outfile2;
 std::ofstream outfile3;
+std::ofstream outfile4;
+std::ofstream outfile5;
 int WINDOWSIZE;
 bool LidarIMUInited = false;
 boost::shared_ptr<std::list<Estimator::LidarFrame>> lidarFrameList;
@@ -74,7 +85,7 @@ PointType pubOdometry(const Eigen::Matrix4d& newPose, double& timefullCloud){
   // 输出odometery数据，timebase
   // std::cout << std::to_string(timefullCloud) << std::endl;
   outfile2.open(fileName2, std::ios::app);
-  outfile2 << newPosition.x() << " " << newPosition.y() << " " << newPosition.z() << " " << std::to_string(timefullCloud) << std::endl;
+  outfile2 << std::to_string(timefullCloud) << " " << newPosition.x() << " " << newPosition.y() << " " << newPosition.z() << std::endl;
   outfile2.close();
 
   pubLaserOdometry.publish(laserOdometry);
@@ -539,22 +550,35 @@ void process(){
       // std::cout << lidar_list->front().timeStamp << std::endl;
       // std::cout << tempOdometryPoint.x << " " << tempOdometryPoint.y << " " << tempOdometryPoint.z << std::endl;
 
-      std::string mapName = fileName3 + std::to_string(lidar_list->front().timeStamp) + dotPcd;
+      int singleTimeBase = trunc(lidar_list->front().timeStamp);
+      std::string mapName = fileName3 + std::to_string(singleTimeBase) + dotPcd;
+      std::string mapName2 = fileName5 + std::to_string(singleTimeBase) + dotPcd;
 
       outfile.open(fileName, std::ios::app);
+      outfile4.open(fileName4, std::ios::app);
       outfile3.open(mapName, std::ios::app);
+      outfile5.open(mapName2, std::ios::app);
       for (int i = 0; i < laserCloudFullResNum; i++) {
         PointType temp_point;
         MAP_MANAGER::pointAssociateToMap(&lidar_list->front().laserCloud->points[i], &temp_point, transformTobeMapped);
-        if ((temp_point.intensity >= 15 && temp_point.intensity <= 120) && (temp_point.y <= (tempOdometryPoint.y + 3) && temp_point.y >= (tempOdometryPoint.y - 3)) && (temp_point.z <= tempOdometryPoint.z)) {
-          outfile << temp_point.x << " " << temp_point.y << " " << temp_point.z << " " << temp_point.intensity << std::endl;
+        if (temp_point.z <= tempOdometryPoint.z) {
           outfile3 << temp_point.x << " " << temp_point.y << " " << temp_point.z << " " << temp_point.intensity << std::endl;
-        // std::cout << temp_point.x << " " << temp_point.y << " " << temp_point.z << " " << temp_point.intensity << std::endl;
+          if ((temp_point.intensity >= 10 && temp_point.intensity <= 120) && (temp_point.y <= (tempOdometryPoint.y + 10) && temp_point.y >= (tempOdometryPoint.y - 10))) {
+            outfile4 << temp_point.x << " " << temp_point.y << " " << temp_point.z << " " << temp_point.intensity << std::endl;
+          // std::cout << temp_point.x << " " << temp_point.y << " " << temp_point.z << " " << temp_point.intensity << std::endl;
+          }
+          if ((temp_point.intensity >= 4 )) {
+            outfile5 << temp_point.x << " " << temp_point.y << " " << temp_point.z << " " << temp_point.intensity << std::endl;
+          // std::cout << temp_point.x << " " << temp_point.y << " " << temp_point.z << " " << temp_point.intensity << std::endl;
+          }
         }
+        outfile << temp_point.x << " " << temp_point.y << " " << temp_point.z << " " << temp_point.intensity << std::endl;
         laserCloudAfterEstimate->push_back(temp_point);
       }
       outfile.close();
+      outfile4.close();
       outfile3.close();
+      outfile5.close();
       sensor_msgs::PointCloud2 laserCloudMsg;
       // sensor_msgs::PointCloud2 <=> pcl::PointCloud<T> 
       pcl::toROSMsg(*laserCloudAfterEstimate, laserCloudMsg);
@@ -623,6 +647,14 @@ int main(int argc, char** argv)
   ros::param::get("~IMU_Mode",IMU_Mode);
 	std::vector<double> vecTlb;
 	ros::param::get("~Extrinsic_Tlb",vecTlb);
+
+  (void)system(rmPath.c_str());
+  (void)system(path.c_str());
+  (void)system(path2.c_str());
+
+  // std::string bagName = NULL;
+	// ros::param::get("~BagName",bagName);
+  // std::cout << bagName << std::endl;
 
   // set extrinsic matrix between lidar & IMU
   Eigen::Matrix3d R;
