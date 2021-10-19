@@ -23,6 +23,7 @@
     <!-- <arg name="BagName" default="GT_2021-09-15-16-38-48.bag" /> -->
     <!-- <node pkg="rosbag" type="play" name="rosbag_play" output="screen" args="$(arg BagName)"/> -->
     <!-- args="/media/workstation/file/Lidar/7457C_Lidar/GT_2021-09-10/GT_2021-09-10-15-51-25.bag" -->
+    <!-- OK: GT_2021-09-10-15-37-16.bag -->
     <node pkg="rosbag" type="play" name="rosbag_play" output="screen" 
         args="/media/workstation/file/Lidar/7457C_Lidar/GT_2021-09-10/GT_2021-09-10-15-37-16.bag"
     />
