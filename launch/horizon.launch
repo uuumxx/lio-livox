@@ -1,5 +1,11 @@
 <launch>
 
+    <!-- <arg name="arg_bagPath" default="/media/workstation/7457C_Lidar/VVR" />
+    <arg name="arg_bagName" default="GT_2021-11-05-16-06-55.bag" />
+
+    <param name="bagPath" type="string" value="$(arg arg_bagPath)" />
+    <param name="bagName" type="string" value="$(arg arg_bagName)" /> -->
+        
     <node pkg="lio_livox" type="ScanRegistration" name="ScanRegistration" output="screen">
 
         <param name="config_file" value="$(find lio_livox)/config/horizon_config.yaml"/>
@@ -20,12 +26,27 @@
 
     <node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz" args="-d $(find lio_livox)/rviz_cfg/lio.rviz" />
 
-    <!-- <arg name="BagName" default="GT_2021-09-15-16-38-48.bag" /> -->
-    <!-- <node pkg="rosbag" type="play" name="rosbag_play" output="screen" args="$(arg BagName)"/> -->
-    <!-- args="/media/workstation/file/Lidar/7457C_Lidar/GT_2021-09-10/GT_2021-09-10-15-51-25.bag" -->
-    <!-- OK: GT_2021-09-10-15-37-16.bag -->
-    <node pkg="rosbag" type="play" name="rosbag_play" output="screen" 
-        args="/media/workstation/file/Lidar/7457C_Lidar/GT_2021-09-10/GT_2021-09-10-15-37-16.bag"
-    />
+    
+    <!-- <node pkg="rosbag" type="play" name="rosbag_play" output="screen" args="$(arg arg_bagPath)/$(arg arg_bagName)" /> -->
 
+<!-- /media/workstation/7457C_Lidar/VVR/GT_2021-11-05-16-06-55.bag -->
+<!-- /media/workstation/7457C_Lidar/VVR/GT_2021-11-05-16-16-24.bag -->
+
+        <!-- args="/media/workstation/7457C_Lidar/VVR/GT_2021-11-05-16-06-55.bag" -->
+    <node pkg="rosbag" type="play" name="rosbag_play" output="screen" 
+        args="/media/workstation/7457C_Lidar/VVR/GT_2021-11-05-16-06-55.bag"
+    />
 </launch>
+
+<!-- topics: /livox/imu_3JEDHB300100911     24321 msgs    : sensor_msgs/Imu           
+             /livox/imu_3WEDH7600115321     24306 msgs    : sensor_msgs/Imu           
+             /livox/imu_3WEDH7600115921     24255 msgs    : sensor_msgs/Imu           
+             /livox/imu_3WEDH7600116091     24370 msgs    : sensor_msgs/Imu           
+             /livox/imu_3WEDH7600116361     24319 msgs    : sensor_msgs/Imu           
+             /livox/imu_3WEDH7600116461     24195 msgs    : sensor_msgs/Imu           
+             /livox/lidar_3JEDHB300100911    1198 msgs    : livox_ros_driver/CustomMsg
+             /livox/lidar_3WEDH7600115321    1198 msgs    : livox_ros_driver/CustomMsg
+             /livox/lidar_3WEDH7600115921    1198 msgs    : livox_ros_driver/CustomMsg
+             /livox/lidar_3WEDH7600116091    1198 msgs    : livox_ros_driver/CustomMsg
+             /livox/lidar_3WEDH7600116361    1198 msgs    : livox_ros_driver/CustomMsg
+             /livox/lidar_3WEDH7600116461    1198 msgs    : livox_ros_driver/CustomMsg -->

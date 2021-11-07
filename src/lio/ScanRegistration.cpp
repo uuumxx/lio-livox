@@ -72,11 +72,7 @@ int main(int argc, char** argv)
   laserNonFeatureCloud.reset(new pcl::PointCloud<PointType>);
 
   customCloud = nodeHandler.subscribe<livox_ros_driver::CustomMsg>("/livox/lidar_3WEDH7600115321", 100, &lidarCallBackHorizon);
-
-  // message_filters::Subscriber<livox_ros_driver::CustomMsg> msg1(nodeHandler, "/livox/imu_3JEDHB300100911", 1);
-  // message_filters::Subscriber<livox_ros_driver::CustomMsg> msg2(nodeHandler, "/livox/imu_3WEDH7600115321", 1);
-  // TimeSynchronizer<livox_ros_driver::CustomMsg, livox_ros_driver::CustomMsg> sync(msg1, msg2, 100);
-  // sync.registerCallback(boost::bind(&lidarCallBackHorizon, _1, _2));
+  // customCloud = nodeHandler.subscribe<livox_ros_driver::CustomMsg>("/livox/lidar_3WEDH7600115321", 100, &lidarCallBackHorizon);
 
   pubFullLaserCloud = nodeHandler.advertise<sensor_msgs::PointCloud2>("/livox_full_cloud", 10);
   pubSharpCloud = nodeHandler.advertise<sensor_msgs::PointCloud2>("/livox_less_sharp_cloud", 10);
