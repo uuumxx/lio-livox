@@ -5,7 +5,7 @@
 
     <param name="bagPath" type="string" value="$(arg arg_bagPath)" />
     <param name="bagName" type="string" value="$(arg arg_bagName)" /> -->
-        
+
     <node pkg="lio_livox" type="ScanRegistration" name="ScanRegistration" output="screen">
 
         <param name="config_file" value="$(find lio_livox)/config/horizon_config.yaml"/>
@@ -26,16 +26,15 @@
 
     <node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz" args="-d $(find lio_livox)/rviz_cfg/lio.rviz" />
 
-    
+
     <!-- <node pkg="rosbag" type="play" name="rosbag_play" output="screen" args="$(arg arg_bagPath)/$(arg arg_bagName)" /> -->
 
-<!-- /media/workstation/7457C_Lidar/VVR/GT_2021-11-05-16-06-55.bag -->
-<!-- /media/workstation/7457C_Lidar/VVR/GT_2021-11-05-16-16-24.bag -->
+    <!-- /media/workstation/7457C_Lidar/VVR/GT_2021-11-05-16-06-55.bag -->
+    <!-- /media/workstation/7457C_Lidar/VVR/GT_2021-11-05-16-16-24.bag -->
 
-        <!-- args="/media/workstation/7457C_Lidar/VVR/GT_2021-11-05-16-06-55.bag" -->
-    <node pkg="rosbag" type="play" name="rosbag_play" output="screen" 
-        args="/media/workstation/7457C_Lidar/VVR/GT_2021-11-05-16-06-55.bag"
-    />
+    <!-- args="/media/workstation/7457C_Lidar/VVR/GT_2021-11-05-16-06-55.bag" -->
+    <!-- /home/workstation/b00570232/bagdata/1109/GT_2021-11-09-13-56-05.bag -->
+    <node pkg="rosbag" type="play" name="rosbag_play" output="screen" required="true" args="/home/workstation/b00570232/bagdata/1109/GT_2021-11-09-13-53-58.bag" />
 </launch>
 
 <!-- topics: /livox/imu_3JEDHB300100911     24321 msgs    : sensor_msgs/Imu           
