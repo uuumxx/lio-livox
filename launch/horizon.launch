@@ -14,6 +14,7 @@
     <node pkg="lio_livox" type="PoseEstimation" name="PoseEstimation" output="screen">
         <!-- 0-Not Use IMU, 1-Use IMU remove Rotation Distort, 2-Tightly Coupled IMU -->
         <param name="IMU_Mode" type="int" value="2" />
+        <param name="IMUTopic" type="string" value="/livox/imu_1HDDH3200103771" />
         <!-- Voxel Filter Size Use to Downsize Map Cloud -->
         <param name="filter_parameter_corner" type="double" value="0.2" />
         <param name="filter_parameter_surf" type="double" value="0.4" />
@@ -34,7 +35,7 @@
 
     <!-- args="/media/workstation/7457C_Lidar/VVR/GT_2021-11-05-16-06-55.bag" -->
     <!-- /home/workstation/b00570232/bagdata/1109/GT_2021-11-09-13-56-05.bag -->
-    <node pkg="rosbag" type="play" name="rosbag_play" output="screen" required="true" args="/home/workstation/b00570232/bagdata/1109/GT_2021-11-09-13-53-58.bag" />
+    <node pkg="rosbag" type="play" name="rosbag_play" output="screen" required="true" args="/media/workstation/7540C_Lidar/GT-Lidar-SAIC-AS32-7540C_2021-12-30-16-37-43.bag" />
 </launch>
 
 <!-- topics: /livox/imu_3JEDHB300100911     24321 msgs    : sensor_msgs/Imu           

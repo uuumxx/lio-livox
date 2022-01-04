@@ -586,6 +586,7 @@ void LidarFeatureExtractor::detectFeaturePoint(pcl::PointCloud<PointType>::Ptr& 
 
 }
 
+// 每一帧点云数据
 void LidarFeatureExtractor::FeatureExtract_with_segment(const livox_ros_driver::CustomMsgConstPtr &msg,
                                                         pcl::PointCloud<PointType>::Ptr& laserCloud,
                                                         pcl::PointCloud<PointType>::Ptr& laserConerFeature,

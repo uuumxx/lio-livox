@@ -15,3 +15,4 @@ LidarNearestDis: 1.0 # if(depth < LidarNearestDis) do not use this point
 KdTreeCornerOutlierDis: 0.2 # corner filter threshold
 Use_seg: 1 # use segment algorithm
 map_skip_frame: 2
+LidarTopic: '/livox/lidar_1HDDH3200101091'

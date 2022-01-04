@@ -83,12 +83,6 @@ PointType pubOdometry(const Eigen::Matrix4d &newPose, double &timefullCloud)
     tempOdometryPoint.y = newPosition.y();
     tempOdometryPoint.z = newPosition.z();
 
-    // 输出odometery数据，timebase
-    // std::cout << std::to_string(timefullCloud) << std::endl;
-    outfile2.open(fileName2, std::ios::app);
-    outfile2 << newPosition.x() << " " << newPosition.y() << " " << newPosition.z() << " " << std::to_string(timefullCloud) << std::endl;
-    outfile2.close();
-
     pubLaserOdometry.publish(laserOdometry);
 
     geometry_msgs::PoseStamped laserPose;
@@ -104,7 +98,17 @@ PointType pubOdometry(const Eigen::Matrix4d &newPose, double &timefullCloud)
     laserOdometryTrans.stamp_ = ros::Time().fromSec(timefullCloud);
     laserOdometryTrans.setRotation(tf::Quaternion(newQuat.x(), newQuat.y(), newQuat.z(), newQuat.w()));
     laserOdometryTrans.setOrigin(tf::Vector3(newPosition.x(), newPosition.y(), newPosition.z()));
+
+    // 1弧度等于180/π度
+    // tf::getYaw(laserOdometryTrans.getRotation()) / M_PI * 180;
+
     tfBroadcaster->sendTransform(laserOdometryTrans);
+
+    // 输出odometery数据，timebase
+    // std::cout << std::to_string(timefullCloud) << std::endl;
+    outfile2.open(fileName2, std::ios::app);
+    outfile2 << newPosition.x() << " " << newPosition.y() << " " << newPosition.z() << " " << std::to_string(timefullCloud) << " " << tf::getYaw(laserOdometryTrans.getRotation()) / M_PI * 180 << " " << std::endl;
+    outfile2.close();
 
     gps.header.stamp = ros::Time().fromSec(timefullCloud);
     gps.header.frame_id = "world";
@@ -599,8 +603,9 @@ void process()
                 {
                     outfile << temp_point.x << " " << temp_point.y << " " << temp_point.z << " " << temp_point.intensity << std::endl;
                     outfile3 << temp_point.x << " " << temp_point.y << " " << temp_point.z << " " << temp_point.intensity << std::endl;
-                    // if ((temp_point.intensity >= 12 && temp_point.intensity <= 120) && (temp_point.y <= (tempOdometryPoint.y + 1.8) && temp_point.y >= (tempOdometryPoint.y - 3.1))) {
-                    if ((temp_point.intensity >= 5 && temp_point.intensity <= 120) && (temp_point.y <= (tempOdometryPoint.y + 10) && temp_point.y >= (tempOdometryPoint.y - 10)))
+                    if ((temp_point.intensity >= 12 && temp_point.intensity <= 120))
+                    // if ((temp_point.intensity >= 12 && temp_point.intensity <= 120) && (temp_point.y <= (tempOdometryPoint.y + 1.8) && temp_point.y >= (tempOdometryPoint.y - 3.1)))
+                    // if ((temp_point.intensity >= 5 && temp_point.intensity <= 120) && (temp_point.y <= (tempOdometryPoint.y + 10) && temp_point.y >= (tempOdometryPoint.y - 10)))
                     {
                         outfile4 << temp_point.x << " " << temp_point.y << " " << temp_point.z << " " << temp_point.intensity << std::endl;
                         // std::cout << temp_point.x << " " << temp_point.y << " " << temp_point.z << " " << temp_point.intensity << std::endl;
@@ -692,6 +697,8 @@ int main(int argc, char **argv)
     ros::param::get("~IMU_Mode", IMU_Mode);
     std::vector<double> vecTlb;
     ros::param::get("~Extrinsic_Tlb", vecTlb);
+    std::string IMUTopic;
+    ros::param::get("~IMUTopic", IMUTopic);
 
     (void)system(rmPath.c_str());
     (void)system(path.c_str());
@@ -723,7 +730,7 @@ int main(int argc, char **argv)
     ros::Subscriber subFullCloud = nodeHandler.subscribe<sensor_msgs::PointCloud2>("/livox_full_cloud", 10, fullCallBack);
     ros::Subscriber sub_imu;
     if (IMU_Mode > 0)
-        sub_imu = nodeHandler.subscribe("/livox/imu_3WEDH7600115321", 2000, imu_callback, ros::TransportHints().unreliable());
+        sub_imu = nodeHandler.subscribe(IMUTopic, 2000, imu_callback, ros::TransportHints().unreliable());
     if (IMU_Mode < 2)
         WINDOWSIZE = 1;
     else

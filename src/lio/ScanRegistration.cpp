@@ -65,13 +65,15 @@ int main(int argc, char** argv)
   float BreakCornerDis = static_cast<float>(fsSettings["BreakCornerDis"]);
   float LidarNearestDis = static_cast<float>(fsSettings["LidarNearestDis"]);
   float KdTreeCornerOutlierDis = static_cast<float>(fsSettings["KdTreeCornerOutlierDis"]);
+  string LidarTopic = static_cast<string>(fsSettings["LidarTopic"]);
 
   laserCloud.reset(new pcl::PointCloud<PointType>);
   laserConerCloud.reset(new pcl::PointCloud<PointType>);
   laserSurfCloud.reset(new pcl::PointCloud<PointType>);
   laserNonFeatureCloud.reset(new pcl::PointCloud<PointType>);
 
-  customCloud = nodeHandler.subscribe<livox_ros_driver::CustomMsg>("/livox/lidar_3WEDH7600115321", 100, &lidarCallBackHorizon);
+  printf("LidarTopic is %s", &LidarTopic[0]);
+  customCloud = nodeHandler.subscribe<livox_ros_driver::CustomMsg>(LidarTopic, 100, &lidarCallBackHorizon);
   // customCloud = nodeHandler.subscribe<livox_ros_driver::CustomMsg>("/livox/lidar_3WEDH7600115321", 100, &lidarCallBackHorizon);
 
   pubFullLaserCloud = nodeHandler.advertise<sensor_msgs::PointCloud2>("/livox_full_cloud", 10);
